@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laberinto de Aniversario · 27 Conejitos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            cursor: url('./cursor/conejo-normal.png') 16 16, auto; 
+        }
+
+        #app {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: background-image 0.5s ease;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .text-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 197, 211, 0.8);
+            padding: 50px 60px;
+            max-width: 800px;
+            width: 85%;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            border-radius: 0;
+        }
+
+        .page-text {
+            color: #4a4a4a;
+            font-size: 1.3rem;
+            line-height: 1.4;
+            text-align: left;
+            white-space: pre-line;
+            min-height: 200px;
+            font-family: 'Georgia', serif;
+        }
+
+        .page-text h1 {
+            color: #d44e6c;
+            margin-bottom: 25px;
+            font-size: 2.5rem;
+            text-align: center;
+            border-bottom: 2px dashed #d44e6c;
+            padding-bottom: 15px;
+        }
+
+        .page-text p {
+            margin: 15px 0;
+            line-height: 5; 
+        }
+
+        .page-text .firma {
+            margin-top: 30px;
+            text-align: right;
+            font-style: italic;
+            font-size: 1.2rem;
+            color: #b13e5c;
+        }
+
+        .video-container {
+            margin: 30px 0;
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border: 3px solid white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .video-container video,
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .text-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .text-box::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .text-box::-webkit-scrollbar-thumb {
+            background: #d44e6c;
+            border-radius: 4px;
+        }
+
+        .floating-image {
+            position: absolute;
+            cursor: url('./cursor/conejo-hover.png') 16 16, pointer;             
+            z-index: 20;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            max-width: 120px;
+            max-height: 120px;
+            object-fit: contain;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
+        }
+
+        .floating-image:hover {
+            transform: scale(1.15) rotate(3deg);
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.4));
+        }
+
+        .floating-image.conejo-clickeado {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .nav-button {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            cursor: url('./cursor/conejo-hover.png') 16 16, pointer;             
+            z-index: 30;
+            max-width: 100px;
+            transition: transform 0.2s ease;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+        }
+
+        .nav-button:hover {
+            transform: scale(1.1);
+        }
+
+        .secret-button {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            cursor: url('./cursor/conejo-hover.png') 16 16, pointer; 
+            z-index: 30;
+            max-width: 150px;
+            transition: transform 0.2s ease;
+            display: none;
+            filter: drop-shadow(0 0 15px gold);
+        }
+
+        .secret-button.visible {
+            display: block;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); filter: drop-shadow(0 0 15px gold); }
+            50% { transform: scale(1.15); filter: drop-shadow(0 0 30px #ffd700); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 15px gold); }
+        }
+
+        .counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 197, 211, 0.95);
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            color: #4a4a4a;
+            z-index: 40;
+            border: 3px solid white;
+            font-size: 1.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: -20px;
+            animation: confetti-fall 4s ease-in forwards;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff3366;
+            text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+        }
+
+        @keyframes confetti-fall {
+            0% { 
+                transform: translateY(0) rotate(0deg); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translateY(100vh) rotate(720deg); 
+                opacity: 0; 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+
+        const config = {
+            paths: {
+                fondos: './fondos/',
+                conejitos: './conejitos/',
+                flotantes: './flotantes/',
+                botones: './botones/',
+                musica: './musica/'
+            },
+            files: {
+                botonRegresar: 'boton-regresar.png',
+                botonSecreto: 'botonsorpresa.png',
+                conejoPrefijo: 'conejo',
+                fondoPrefijo: 'fondo',
+                cancionPrefijo: 'cancion',
+                extensionFondo: '.jpg',
+                extensionConejo: '.png',
+                extensionCancion: '.mp3'
+            }
+        };
+
+
+        function lanzarConfetti() {
+            let container = document.querySelector('.confetti-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'confetti-container';
+                document.body.appendChild(container);
+            }
+            
+            const corazones = ['❤️', '💖', '💗', '💓', '💕', '💞', '💘', '💝'];
+            
+            for (let i = 0; i < 200; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    
+                    confetti.style.left = Math.random() * 100 + '%';
+                    
+                    const rojos = ['#ff3366', '#ff4466', '#ff5566', '#ff6666', '#ff7777', '#ff3366', '#e32454', '#dc143c'];
+                    confetti.style.color = rojos[Math.floor(Math.random() * rojos.length)];
+                    
+                    const tamaño = Math.random() * 20 + 15;
+                    confetti.style.width = tamaño + 'px';
+                    confetti.style.height = tamaño + 'px';
+                    confetti.style.fontSize = tamaño + 'px';
+                    
+                    confetti.innerHTML = corazones[Math.floor(Math.random() * corazones.length)];
+                    
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    
+                    confetti.style.animation = `confetti-fall ${Math.random() * 3 + 2}s ease-in forwards`;
+                    
+                    container.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }, i * 20); 
+            }
+        }
+
+        const pages = {
+            1: {
+                id: 1,
+                texto: `
+                    <h1>felices 3 años!!</h1>
+                    <p>hoy cumplimos 3 años juntos, e hice esto para tí.</p>
+                    <p>por favor empieza clickeando la pantalla, y sube el volumen, espero no te moleste la música, cada página tiene una canción distinta, referente a nosotros, aprendí a programar para poder hacerte esto jiji</p>
+                    <p>te explico la dinámica</p>
+                    <p>hay 27 páginas divididas en 3 ramas, todas siguen una "línea" o ramificaciones, todas conectadas, todas sobre nosotros, y todas parten de aquí.</p>
+                    <p>ahora, ¿ves el gatito de la esquina superior izquierda?, dale click, ¿también ves el contador de la esquina superior derecha?, 27 gatitos! cuando encuentres los 27, regresa aquí, para descubrir la sorpresa.</p>
+                    <p>para avanzar entre páginas, solo clickea las imágenes flotantes, procura no perderte, muajajaja esto es un gran laberinto, ¿recuerdas los números extraños que te envié hace como un mes? es la estructura de esto, diviértete encontrando todos los gatitos</p>
+                    <p>te amo mucho, mi amorcito precioso y lindo y bello, me encantas completito y todito tú, mi niño lindo lindo y bonito bonito, muak muak muak</p>
+
+                `,
+                alerta: 'el primero de muchos, pero por algo se empieza, así como hace 35 meses celebramos nuestro mes #1',
+                hijos: [2, 3, 4],
+                flotantes: [
+                    { tipo: 'navegacion', destino: 2, imagen: 'nosotrosvivos.png', top: '20%', left: '15%' },
+                    { tipo: 'navegacion', destino: 3, imagen: 'nosotrosfeikos.png', top: '50%', left: '82%' },
+                    { tipo: 'navegacion', destino: 4, imagen: 'frenchexit.png', top: '75%', left: '15%' },
+                    { tipo: 'conejo', top: '5%', left: '5%' },
+                ]
+            },
+            
+            2: {
+                id: 2,
+                texto: 
+                `<h1>es increíble esta relación</h1>
+                <p>en este punto, no solo me sorprende lo mucho que llevamos juntos también me sorprenden muchísimas otras cosas, como por ejemplo lo mucho que te amo, lo mucho que me amas, lo mucho que ha influido esta relación y tú en mi vida, todo lo que representa, todo lo tangible y lo intangible, el gran amor que hay aquí, todo el esfuerzo por parte de los dos, tantos recuerdos juntos, todas las salidas, todos los regalos y es que, pensarlo de verdad me hace sentir muchas cosas, es increíble y me dan ganas de llorar cada que me doy cuenta de lo presentes que estamos en la vida del otro, y ójala pasar el resto de nuestros días así, sería tan bonito siempre estar así de presente en tu vida, y tú así de presente en la mía, como dice la canción de esta página, "quiero ser tu canción, desde el principio al fin", y muchas metáforas muy bonitas que se resumen en "ser todo en tu vida". </p>
+
+                 `,
+                alerta: '¡encontraste un gatito!, sigue así, mi amor',
+                hijos: [5, 6],
+                flotantes: [
+                    { tipo: 'conejo', top: '45%', left: '10%' },
+                    { tipo: 'navegacion', destino: 5, imagen: 'tiempojuntos.png', top: '30%', left: '20%' },
+                    { tipo: 'navegacion', destino: 6, imagen: 'regalitoss.png', top: '70%', left: '80%' }
+                ]
+            },
+            
+            3: {
+                id: 3,
+                texto: `<h1>estás en todos lados</h1>
+                <p>y lo digo de una manera muy bonita, mi amor, estás en cada pedazo de mi vida, de mi sentir, y de cómo veo las cosas, y también estás físicamente y si no estás tú, sí están tus cosas, en todos lados, tus ojitos, tu olor y el gran, gran amor que siento por tí, incluso en emociones no relacionadas a tí, te puedo encontrar, como en mis motivaciones y en mis alegrías, incluso en hobbies como este!, me encanta amarte tanto y tanto porque no solo es "te amo mucho", también es "te amo mucho tiempo", te amo al despertar, te amo cuando estoy feliz, te amo cuando estoy triste, te amo estando enojada, estando preocupada, estando cansada, en cualquier momento del día se me viene a la cabeza la imágen de esos ojitos hermosos y puedo perderme en ese pensamiento, dejar de lado cualquier otra cosa y solamente amarte, incluso ahorita, son las 5 AM, estoy cansadísima, tuve escuela, exámen y expocisión, y aún así, el amor tan grande que te tengo es lo que me tiene aquí, escribiendo y escribiendo, porque de verdad que ese amor tan grande cabe en cualquier rincon de mi día y de mi corazón</p>
+                `,
+                alerta: '¡otro gatito!, ¿sabías que te adoro?, asumo que ya sabes que te amo, porque en el texto de esta página lo digo como 10 veces, pero bueno, por si no te quedó claro, te amo mucho, y te adoro el doble, mi niño hermoso',
+                hijos: [7, 14],
+                flotantes: [
+                    { tipo: 'conejo', top: '25%', left: '20%' },
+                    { tipo: 'navegacion', destino: 7, imagen: 'luna.png', top: '60%', left: '80%' },
+                    { tipo: 'navegacion', destino: 14, imagen: 'florencias.png', top: '80%', left: '85%' }
+
+                ]
+            },
+            
+            4: {
+                id: 4,
+                texto: `
+                <h1>¿tan rápido 3 años?</h1>
+                <p>se pasaron volando, se siente como si hubiera sido muy poquito, y a la vez se siente como si llevara toda la eternidad a tu lado, también siento ganas de realmente pasar toda la eternidad contigo, sería muy lindo, estos 3 años han sido lo mejor de mi vida, 3 añitos de mucho mucho amor, con sus peleas y algunas cosas malas, como cualquier cosa en la vida, justo como dice en Lovers Rock, "because love can burn like a cigarette", pero puedo decir con total seguridad que ha sido más lo bonito, más lo bueno, más el amor, y no por poquito, por muchísimo, yo creo que es una proporción 1:83492393 si no es que mucho más, esta "rama" de esta página es mi favorita, esta es lineal, ójala te guste</p>
+                `,
+                alerta: 'miau miau miau (traducción: te amo mucho, mi amor)',
+                hijos: [8],
+                flotantes: [
+                    { tipo: 'conejo', top: '10%', left: '80%' },
+                    { tipo: 'navegacion', destino: 8, imagen: 'bonito1.png', top: '20%', left: '70%' }
+                ]
+            },
+            
+            5: {
+                id: 5,
+                texto: `<h1>lo intangible</h1>
+                <p>creo que esto es lo que más peso tiene, o bueno, no sé, pero es lo que siempre está, así estemos juntos o separados, así estemos peleados o bien, si hay algo que siempre está, son las emociones, lo que dejas en mí y lo que yo dejo en tí, no solo el amor, no solo la felicidad y todo lo bonito de la relación, "sembramos" de alguna manera en el otro, ya sea ideas, propósito, motivación, y eso me parece tan bonito, que no solo sea un "te amo y te doy besos", que sí, qué bonito, pero me encanta cómo "va más allá", me haces feliz y llenas mi vida de una manera no solamente romántica, aparte de que eres mi mejor (y único) amigo, eres una gran motivación y una persona a la que yo admiro muchísimo, y todo eso, es un gran y muy bonito aporte, y al menos a lo que creo (y espero), soy al menos algo similar en la tuya</p>
+                `,
+                alerta: '¡otro más!, tú puedes encontrarlos todos, mi niño listo y precioso precioso',
+                hijos: [9, 10, 16],
+                flotantes: [
+                    { tipo: 'conejo', top: '30%', left: '20%' },
+                    { tipo: 'navegacion', destino: 9, imagen: 'besofrente.png', top: '9%', left: '80%' },
+                    { tipo: 'navegacion', destino: 10, imagen: 'choriqueso.png', top: '80%', left: '70%' },
+                    { tipo: 'navegacion', destino: 16, imagen: 'mimidote.png', top: '60%', left: '20%' },
+
+                ]
+            },
+            
+            6: {
+                id: 6,
+                texto: `<h1>lo tangible</h1>
+                <p>me gusta mucho mucho esta parte, y no de una manera "interesada", de hecho conecta con la otra "ruta" de la página anterior (lo intangible), no es solo "ah, una carta bonita" o "ah, un helado", o "ah, tal cosa", es pensar en todo lo que viene detrás, incluso en cosas sí tangibles pero no materiales, pienso en ello como algo más, un abrazo no es solo un abrazo, es sentirte lo más cerca posible, tener cerca tu corazoncito, es olerte, es saber que los dos estamos a gusto en ese abrazo, porque nos amamos; lo mismo con otras cosas, no es solo "te compré esto", es "te compré esto porque sé que te gusta", es ver algo y pensar en la otra persona, recibir algo imaginándote pensando si llevarlo, decidiendo qué llevar, o en las salidas, que también es algo tangible no material, todo lo que tiene detrás, todo ese esfuerzo, lo que nos lleva a la siguiente página</p>
+                `,
+                alerta: 'la verdad me da algo de miedo que te parezca bobo esto de los gatitos, ójala te entretenga un poquito, mi niño hermoso',
+                hijos: [11],
+                flotantes: [
+                    { tipo: 'conejo', top: '10%', left: '30%' },
+                    { tipo: 'navegacion', destino: 11, imagen: 'comida.png', top: '70%', left: '75%' }
+                ]
+            },
+            
+            7: {
+                id: 7,
+                texto: `<h1>mejorar</h1>
+                 <p>esto es algo que ya he dicho muchas muchas veces, y es que tú me motivas DEMASIADO, me motivas a ser yo, me motivas a seguir esforzándome, y esto es por varias cosas que voy a desarrollar más en las ramificaciones de aquí: eres un completito, completito amor, eres la mejor persona que conozco, entonces me inspiras, me haces sentir bien, y me haces querer darte lo mejor de mí; me motivas en 3 partes, igual esta página queda muy breve, pero en sí es eso, ya desarrollaré más adelante</p>
+                `,
+                alerta: 'originalmente pensé en conejitos en lugar de gatitos, pero creo que esto se siente más "nosotros" jiji',
+                hijos: [12, 13],
+                flotantes: [
+                    { tipo: 'conejo', top: '20%', left: '50%' },
+                    { tipo: 'navegacion', destino: 12, imagen: 'besote.png', top: '10%', left: '80%' },
+                    { tipo: 'navegacion', destino: 13, imagen: 'nosotros1.png', top: '20%', left: '20%' },
+                ]
+            },
+            
+            8: {
+                id: 8,
+                texto: `<h1>23/10/22</h1>
+                <p>el día que empezó todo, sin saber a cuánto llegaría, yo creo que ni por aquí se te pasó pensar que poner una canción de una random en tu historia terminaría en esto, y yo creo que es lo mejor que pudo haber pasado, me acuerdo que ese día yo estaba escombrando, como mi mamá iba a hacer de comer para navidad, marina la carne desde el día anterior, entonces me pidió la cocina limpia para llegar a hacer eso, eso estaba haciendo cuando lo interrumpí, ví tu historia, y desde ahí empezó lo más bonito de mi vida, muchas gracias por haberle pedido mi insta a pablo, por no haberte decepcionado cuando te quité follow, por haberme stalkeado, por estos 3 años y por ser tan precioso, gracias</p>
+                `,
+                alerta: 'son muchos muchos gatitos mi amor, 27, un número muy bonito, igual que tú, mi solecito lindooo hermoso precioso, mi niño listo, inteligente, tierno, dulce, cariñoso, el mejor del mundo mundial',
+                hijos: [15],
+                flotantes: [
+                    { tipo: 'conejo', top: '30%', left: '60%' },
+                    { tipo: 'navegacion', destino: 15, imagen: 'aciduladitos.png', top: '10%', left: '30%' }
+                    
+                ]
+            },
+            
+            9: {
+                id: 9,
+                texto: `<h1>el amor</h1>
+                <p>el "motor" de todo esto, me gusta mucho cómo dice la canción de willie colón, que, por cierto, está escrita tanto al amor, como a la revolución, ajá, me gusta mucho cómo dice:
+                    "Que anda suspirando por las alcobas
+                    Que se oye susurrando en versos de trova
+                    Que anda combinándonos preguntas locas
+                    Que anda en las cabezas, anda en las bocas
+                    Que anda ascendiendo por altos huecos
+                    Que están hablando alto en la bodega"
+                    obviamente exagerado porque se ocupa el recurso en la música, pero ajá, así se siente amar, y todo eso, tanto la emoción, como las angustias, como la felicidad y todo lo que viene con el amor, lo siento potenciado, porque eres tú, porque te amo demasiado, muy fuerte, todo el tiempo, cualquier emoción la siento exagerada, y qué bonito, de verdad qué bonito poder sentir tanto, qué bonito que me puedas hacer sentir así, me encantas y me encanta amarte así de tantísimo, mi niñote lindo, muchas gracias por haberme hecho conocer cómo se siente amar tanto, muchas gracias también por las tristezas, me gustan las emociones así de fuertes, me gusta porque así se siente amar, aparte de todo lo tan bonito que me has ofrecido, las tristezas también forman parte, y no me voy a estar quejando de eso, porque también es parte de lo bonito, y de lo real, y de lo que siento contigo, entonces, gracias por todo el amor, por todo lo que me haces sentir, por todo lo que me has hecho sentir, por todo lo que vamos a seguir sintiendo juntos, te amo mucho mi niño lindo</p>
+                `,
+                alerta: 'último gatito de este camino D:',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '80%', left: '36%' }
+                ]
+            },
+            
+            10: {
+                id: 10,
+                texto: `<h1>tenerte</h1>
+                <p>me encanta tenerte, no (solo) de una manera posesivosa, me encanta tener tu amor, tenerte en mi vida y todo lo que eso representa, tanto lo bueno como lo malo que llega a haber, que pues es muy poco, y da una emoción bien bonita y bien extraña pensar que tú, siendo todo lo lindo, perfecto, inigualable, adorable y tierno que eres, hayas decidido estar aquí, ser mío y yo ser tuya, es decisión de los dos, y pensarlo de manera consciente me hace sentir muchas cosas (bonitas), porque no eres alguien que está aquí al "ahí se va, a ver qué sale", tú decidiste estar aquí, también, con todo lo malo y todo lo bueno, conociendo mis defectos, y eso es algo hermoso, así como yo puedo decidir convivir el resto de mis días con alguien con tus inexistentes defectos, tú también lo haces pero conmigo que sí existen, es muy bonito de pensar, y solo me queda agradecerte por tu esfuerzo (página siguiente wujuu) </p>
+                `,
+                alerta: '¡otro más!, ¿te está gustando esto?, mi niño hermoso, precioso, inteligente, listo, tierno, dulce, todo lindo y todo bonito?',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '35%', left: '65%' },
+                ]
+            },
+            
+            11: {
+                id: 11,
+                texto: `<h1>esfuerzo</h1>
+                <p>aparte de todo lo de "pensar en tal cosa", el esfuerzo, sean salidas, sea afecto o regalos, yo sé el esfuerzo que llega a implicar para uno o para el otro, eso es algo que ya sabes que me hace sentir MÁS bonito, y valorar MÁS las cosas, cuando a pesar de estar estresado, aún me abrazas, aún me ayudas con mis cosas; cuando a pesar de estar cansado, caminas, salimos, paseamos, platicamos; cuando a pesar de no tener dinero, ahorramos o nos endeudamos un poquito por el otro, aún sin tiempo, aún estresada por exámenes, llevar como 20 horas haciendo un codigotote de como mil líneas, por puritito amor, por imaginarme tu carita mientras leas esto, llorar mientras escribo porque estoy oyendo una playlist de 28 canciones (guiño guiño) en bucle mientras escribo las cartas, que por cierto, no las estoy escribiendo de corrido, de repente en el metro o haciendo quehacer reflexiono, y luego prendo la compu para ponerme a escribir, y eso es algo muy bonito, hacer un espacio para el otro, no solo en el tiempo, en el cansancio, en el ánimo, en nuestras vidas pues, y eso es algo que siento tan bonito, cuando me dejas las llamadas con volumen, así no necesite llamarte en ningún momento, saber que eres y has sido capaz de hacer ese esfuerzo, de interrumpir tu descanso, de a sabiendas de que vas a estar cansado el día siguiente, aún así decidirías estar conmigo, ayudarme, no te das una idea de lo mucho que, de por sí valoro las cosas, luego siendo consciente del esfuerzo que todo requiere, muchísimo más, y de verdad de verdad, muchas gracias por todo lo que has hecho por mí, los regaños, el sueño, el cansancio, el estrés, eres increíble, y perdón también, o sea, sí, qué bonito, pero igual no está bonito haberte ocasionado esos malestares</p>
+                `,
+                alerta: '¿sí lees esto?, si sí, mándame un emoji de gatito enamorado (😻) en este momento, muajajaja',
+                hijos: [17, 18],
+                flotantes: [
+                    { tipo: 'conejo', top: '25%', left: '75%' },
+                    { tipo: 'navegacion', destino: 17, imagen: 'metamorfosis.png', top: '15%', left: '25%' },
+                    { tipo: 'navegacion', destino: 18, imagen: 'muchosregalos.png', top: '80%', left: '70%' }
+                ]
+            },
+            
+            12: {
+                id: 12,
+                texto: `<h1>confort</h1>
+                <p>esto va por la parte del cariño y la comodidad que siento contigo, y cómo eso me ayuda a querer seguir adelante, ajá, espero entiendas la línea que sigue cada "apartado", y si no, de verdad de verdad perdóname la vida</p>
+                <p>tú sabes lo mucho que me ayudas cuando me siento mal, sabes desde que estabamos en voca y llegaba triste a refugiarme en tu pechito, lo muy feliz que eres capaz de hacerme con solo eso, abrirme tus brazos, eres un gran gran apoyo, no sé cómo le haces, pero sea cuál sea mi problema, preocupación o tristeza, siempre tienes las palabras perfectas para ayudarme, tanto ayudarme a entender, como ayudarme a sentir mejor al respecto, y sobretodo, siento que tú siempre tienes muy en claro las cosas, entonces me ayudas a pensar en el "¿qué hacer?", esto es algo que me encanta de tí, y que cada que puedo te agradezco tanto como soy capaz, y es que de verdad me ayudas mucho, las veces en las que es el ánimo lo que me empieza a frenar, siempre tienes algo bonito y bueno que decir, entonces, de nuevo, muchas gracias, mi solecito, siempre iluminas hasta los ratitos más feos, y a veces ya ni siquiera tienes que decir algo o siquiera saber que me siento mal, tu sola presencia es capaz de hacerme tan, pero tan inmensamente feliz y de desaparecer cualquier problema, sea cual sea, sea tan grande como sea, eres increíble, te adoro con toda mi alma, y gracias por siempre estar para mí</p>
+                `,
+                alerta: '¡otro más!, ¿te has dado cuenta que cada gatito tiene un mensaje especial para ti?, mi niño hermoso',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '50%', left: '30%' }
+                ]
+            },
+            
+            13: {
+                id: 13,
+                texto: `<h1>identidad</h1>
+                <p>este creo que esta medio boboo, pero a mí me hace muchísimo sentido, tú me has ayudado mucho tanto a entenderme un poquito más, como a sentirme bien con quien soy, y sobre todo, haz formado parte de mi identidad, y sé que yo de la tuya, y no es de una manera fea, en la que, no sé, se reduzca mi identidad a "la novia de...", nono, nada de eso, yo a lo que me refiero es que POR TÍ, me gustan varias cosas, he descubierto otras tantas, cosas que quizá nunca me hubiera atrevido a conocer de no ser portí, ejemplo reciente: star wars, me daba mucha flojera cuando mi papá o alguien la veía, pero contigo, mientras escribo esto estoy impaciente por vernos y terminarla de una vez por todas, o incluso me ayudas con algo que sabes que siempre ha sido una inseguridad mía medio fuerte: mi manera de ser, siempre me has hecho sentir a gusto aún cuando ando de hiperactiva o de intensa, y espero y creo que lo mismo pasa de tu lado, me has contado de cómo ha llegado a ser la gente contigo, y de verdad espero estar pudiendo ayudarte a tí de la misma forma que tú lo has hecho por estos 3 años conmigo, te amo</p>
+                `,
+                alerta: 'miau miau miau miau miau (traducción: estos últimos 3 años han sido lo mejor de mi vida, muchas gracias, corazón de melón)',
+                hijos: [19],
+                flotantes: [
+                    { tipo: 'conejo', top: '40%', left: '40%' },
+                    { tipo: 'navegacion', destino: 19, imagen: 'sudaderas.png', top: '70%', left: '20%' }
+                ]
+            },
+            
+            14: {
+                id: 14,
+                texto: `<h1>objetos</h1>
+                <p>esta página quizá esté medio muy breve, pme sirve como una introducción a las otras dos páginas, me enfoco a hablar el valor que le doy a lo material y la felicidad de tener cosas que ver, sentir, oler, ajá, y que me recuerden a tí, mi sol</p>
+                `,
+                alerta: 'ójala se pudiera cambiar el color de estos recuadros, pero bueno, el gris resalta sobre los colores bonitos de esta página, así como tú resaltas en mi vida, muak',
+                hijos: [20, 24],
+                flotantes: [
+                    { tipo: 'conejo', top: '70%', left: '30%' },
+                    { tipo: 'navegacion', destino: 20, imagen: 'rosones.png', top: '30%', left: '70%' },
+                    { tipo: 'navegacion', destino: 24, imagen: 'muajaja.png', top: '60%', left: '20%' }
+                ]
+            },
+            
+            15: {
+                id: 15,
+                texto: `<h1>primavera</h1>
+                <p>sabes lo nostálgica que soy, pero realmente creo que esta es de las mejores épocas de la relación, creo que si bien no estabamos haciendo las cosas tan bien, en ese momento a pesar de las cosas que estaban mal, es cuando el amor se siente distinto, porque ahorita obviamente nos amamos como 412903 veces lo que nos amabamos en ese entonces, pero ahí es una sensación distinta, y no sabes con cuánto amor recuerdo todos esos días que nos brincabamos clases, cuando nos sentabamos en el huequito en el que sí caía lluvia en el tercer piso de los AB, simplemente caminar dándole 10 vueltas a Voca, besarnos hasta que yo empezaba a sentir rara mi mandíbula, oler a perro todo el día por estar empapados, los nervios de los primeros días, las canciones, mis audífonos feos, empezar a regresarnos juntos pero no solos, y ese 27 de Marzo en el que estabamos tan nerviosos, y yo por boba, porque realmente yo no tenía de nada de lo que estar nerviosa, pero por dioss, aunque lo feliz que hemos sido desde entonces, no se compara ni un poquito a lo felices que fuimos esa epoca, no quita lo hermosa que fué, y al menos para mí, lo "icónica" que sigue siendo, son muchas cosas específicas que recuerdo tanto, cuando llegué a mi casa por primera vez con una sudadera tuya, cuando los dos nos dimos flores, pero era la versión del otro, y se notaba mucho qué ramo era de quién, te amo tanto mi niño</p>
+                `,
+                alerta: 'hubo muchos cambios en mis ideas de esta página, sufrí mucho porque aparte no te podía contar ni pedir opinión, pregúntame y te contaré muchas cositas, muajajajaj',
+                hijos: [21],
+                flotantes: [
+                    { tipo: 'conejo', top: '30%', left: '70%' },
+                    { tipo: 'navegacion', destino: 21, imagen: 'florecitas.png', top: '70%', left: '40%' }
+                ]
+            },
+            
+            16: {
+                id: 16,
+                texto: `<h1>esfuerzo</h1>
+                <p>no sé si ya habrás visto la otra página de "esfuerzo", igual está extraño, porque lo estoy separando, mientras una trata de "esfuerzo en lo tangible", y la otra de "esfuerzo en lo intangible", en ambos casos el esfuerzo es algo intangible, y en ambos casos igual de grande, igual de importante, pero aún así, por mantener la línea de estas mini cartitas, me pareció bonito hacerlo de esta manera :p te amo mucho mucho, y gracias por todo lo que haces por mí, mi niño lindo lindo y precioso</p>                `,
+                alerta: 'me acuerdo cuando fuimos al MUNAL y subí una historia con esta canción, antigris de Tessa, siempre ha sido de mis canciones favoritas de ella',
+                hijos: [22, 23],
+                flotantes: [
+                    { tipo: 'conejo', top: '20%', left: '20%' },
+                    { tipo: 'navegacion', destino: 22, imagen: 'girasol.png', top: '10%', left: '30%' },
+                    { tipo: 'navegacion', destino: 23, imagen: 'girasoles.png', top: '20%', left: '70%' }
+                ]
+            },
+            
+            17: {
+                id: 17,
+                texto: `<h1>salidas</h1>
+                <p>siguiendo con lo del esfuerzo, creo que esta es una parte bastante importante, más que nada con respecto a tí, porque sé que nunca te ha gustado especialmente salir, pero lo haces por mí, y al menos a lo que me has dicho, no es un sufrimiento para tí, creo que es similar a lo que es para mí ir parada en el metro contigo, o sea, me llega hasta a disgustar cuando me toca irme o regresarme parada, pero la verdad, cuando a nosotros nos toca irnos parados, así sean largas distancias, no me molesta y hasta me gusta, ir abrazada de tí, ir frente a frente, el contacto físico, porque no importa si es el metro y hace calor, porque voy contigo</p>
+                <p>y bueno, creo que sabes lo muy muy feliz que me hace salir, y muchísimo más si es contigo, yo creo que mis salidas favoritas han sido la de coyoacan la vez pasada, cuando caminamos reforma desde zócalo hasta casi chapultepec (perdóname la vida), y cualquier salida casual de ir a traer tortillas. la de coyoacan me encantó, top 1, la de chapultepec aparte de que fue muy bonita se mezcla lo que te digo del esfuerzo, y de verdad de verdad perdón, y gracias; pero las salidas "casuales" tienen algo especial, se siente cotidiano, pero no cotidiano aburrido, cotidiano bonito, es bonito que nosotros seamos cotidianidad, porque no somos monotonía, estamos acostumbrados al otro (no de una manera fea), es compañia, así sea ir enfrente, a comprar refrescos con David, ir a soriana, ir a buscar trabajo juntos, es bonito, porque eso es el diario, no es una salida especial, es estar juntos</p>
+                <p>fuera de esas, yo creo que mi tipo de salidas favoritas son en las que no estamos haciendo nada, ir a bobear, caminar 3 veces encuentro oceanía, ir a echarnos a bosques, me encanta sentirte cerca y no sé qué hace diferentes esos ratos, porque te tengo cerca estando en mi casa o en cualquier cita, pero esas citas sin un fin definido, se sienten muy diferentes, me gustan mucho, pero no más de lo que me gustas tú</p>
+                `,
+                alerta: 'te extraño mientras escribo esto, y seguramente también te extrañe mientras hacía cada detallito de esta página',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '45%', left: '55%' }
+                ]
+            },
+            
+            18: {
+                id: 18,
+                texto: `<h1>regalos</h1>
+                <p>aquí sí, no puedo decir "no te das una idea de lo mucho que...", porque lo sabes, lo sabes de sobra, lo sabe mi familia, sobretodo lo sabe la cajota de amazon que tengo abajo de mi cama, todas las cartas, todos los dibujos, las cositas que luego ves y piensas en mí, así sea una etiqueta, todo lo guardo, los tickets de cada cita, los envoltorios de lo que me das, las bolsas de regalo, el papel de cada ramo de flores, cada pétalo de cada flor (a menos que por alguna extraña razón se hongueé), cada cosita que me has dado, la atesoro, cada detalle, pequeño, chiquitito, grandote o grandotote, son mi segundo mayor tesoro (obviamente después de mi niño hermoso), porque me lo ha dado mi sol, mi amorcito bello, porque sé todo lo que significan, no es nada más el envoltorio de unos cookies bites, es el envoltorio de algo que viste, cuando ni siquiera ibas pensando en comprarme algo, y dijiste, ñam ñam, para Sofia; nunca han sido "solo flores", de verdad es algo muy bobo, pero las veo y me pasa tanto por la cabeza, tener yo flores, significa que tú sabes lo mucho que me gustan, significa que saliste de tu casa pensando o no en comprar flores, las viste, comparaste ramos, hiciste cuentas, las cargaste todo el camino, pensaste en mi reacción mientras las escondías detrás de tí, sentías bonito cuando las veía, sientes bonito mientras me ves lavar el florero, poner azúcar y agua, y quizá no, quizá para tí solo es "ya, cumplí", pero para mí es imaginarte como sé que yo soy, cuando ahorras para citas, cuando compras comida rica ñam ñam deliciosa para los dos, sabiendo que así sea algo saladote y llenón como pizzas, o algo ligero y dulce como un helado de Mc Donald's, me hace igual de feliz, me llena la barriga y el corazón, y sea algo de con David, o sea una comida completa con todo y postre, en cualquier caso para mí, es el esfuerzo de mi niño hermoso, de mi adoración, sea cual sea el obsequio, sea de consumo, sea decorativo, sea de uso, sea algo que sabías que quería/necesitaba, siempre te veo a tí, esos ojitos hermosos, cuando veo el objeto. </p>
+                <p>y del otro lado lo mismo, pedirle prestado a mi mamá con algo en mente, juntar lo de bicitaxis o cualquier cosa para comprarte algo, usar pedazos de hojas para hacerte dibujos, usar todo lo que esté a mi alcance para darte algo, para hacerte feliz y dejarte más en claro mi amor, ver tu carita linda y bonita y preciosa y hermosa y feliz, sea algo comprado o hecho tu carita tiene la misma felicidad, es muy bonito cada parte de regalarte algo, desde estar buscando qué darte, o desde "ah mira, qué bonito, para lev", sin siquiera estar buscando, pensar en cómo conseguirlo o hacerlo (cuando veo cosas bonitas en pinterest o tiktok, manualidades, ajá), incluso ahorita, esto de hecho nació porque por mi cuenta estaba medio estudiando programación, lo de los gatitos (originalmente conejos) era una especie de autotarea, algo que yo sólita me puse a hacer para practicar, pensé "ah, qué bonito", luego se mezcló con que me acordé de la carta en word que te hice hace 2 años, pensé en hacer una en strawpage o algo así, pero me pareció más bonito esto, aparte de que es más "interactivo", creo que también hay algo bonito en que algo que estoy aprendiendo, te lo dé, y pues eso, te amo con todo mi ser, ójala te guste y no te parezca algo bobo </p>
+                `,
+                alerta: '¿cuántos llevas? mándame un mensaje en este instante diciéndome qué número de gatito es este, mi niño hermoso y precioso',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '65%', left: '35%' }
+                ]
+            },
+            
+            19: {
+                id: 19,
+                texto: `<h1>mejorar individualmente</h1>
+                <p>otra página en la que me da nervios que no entiendas mi punto D:</p>
+                <p>otra manera en la que me ayudas mucho a "seguir adelante", es la motivación pero inspirándome: te admiro muchísimo mi niño lindo, admiro muchísimo todo lo que forma parte de tí, admiro tu amabilidad, tu nobleza, tu capacidad de amar tanto tanto, tus ganas de salir adelante, me haces querer ser mejor, no solo de "ah, voy a salir adelante para poder esta bien los dos en algún momento de nuestras vidas", también es un "ah, quiero mejorar, dejar de ser grosera, dejar de lado tales actitudes", entonces ajá, también me motivas mucho por ese lado, amarte es increíble, pero no tanto como tú</p>
+
+                `,
+                alerta: 'muchas gracias por tanto que haces por mí, y por encontrar los gatitos',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '50%', left: '50%' }
+                ]
+            },
+            
+            20: {
+                id: 20,
+                texto: `<h1>TUS cosas</h1>
+                <p>también esto me gusta mucho, no solo tenerlo, en general me gusta mucho el concepto de "tus cosas", como algo definido, no sé si me estoy dando a entender, pero "tu sudadera", "tu reloj", "tu mochila", son cosas que hasta me gusta verlas, me gusta cuando me mandas fotos estando en tu casa y veo cosas que se ve que son tuyas, sean juguetes, ropa, zapatototes, y me gusta también cuando yo tengo algo tuyo, sea para usarlo o solo para tenerlo, como cuando me dejas tus collares, tus sudaderas con olor delicioso ñam ñam, cuando llegas a olvidar cosas, bajar y ver tu cargador en la mesa, es una sensación inexplicablemente bonita, te veo viviendo a través de tus cosas, te imagino utilizando tus cosas, y de verdad creo que esto está muy bobo, pero hasta el tener tu sudadera e imaginarte teniendo frío y tapándote, es muy muy bonito, me gustas mucho, me gustan tus cosas, y me gusta que sean tuyas: de alguna manera tienen algo que dice "LEV", como te dije, en las fotos que luego mandas, me gusta ver cositas que sé que son tuyas, no necesariamente porque te haya visto teniéndolas o usándolas, si no, porque es algo muy reconocible, ejemplo vago, los zapatos, tu estilo de vestir, cosas que sé que sí usas, como tu crema de peinar verde de sedal, y me parece muy muy bonito, pero nunca tan bonito como me pareces tú, mi amooor</p>
+                `,
+                alerta: 'te adoro con cada parte de mi ser, y me encantas completito, ¡sigue buscando gatitos!',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '30%', left: '60%' },
+                ]
+            },
+            
+            21: {
+                id: 21,
+                texto: `<h1>verano 2023</h1>
+                <p>esta época también fue tan linda, ver breaking bad, jugar minecraft en llamada todo el día, dormir en llamada, vernos de vez en cuando, yo creo que es la época en la que más tiempo pasamos juntos, o al menos en la que más estabamos presente en la vida del otro, yo te tenía hasta en la serie que estaba viendo en ese entonces, tengo mi galería llena de fotos de esa época porque te mandaba fotos toodo el rato, toodos los días, a un punto exagerado, porque lo sigo haciendo, pero no en la cantidad que lo hacía; de esta época recuerdo mucho sensaciones, como la comezón del audífono que me ponía para tener microfono cerca de mi boca, la emoción que sentí al encontrar los girasoles para hacerte el jardincito, el frío en los pies cuando dormíamos en llamada, porque para que no me escucharan jalaba para arriba la cobija y me tapaba la cara en vez de taparme los pies, tantas cosas tan bonitas, me gusta mucho que de esa época nacieron muchas cosas que me recuerdan a tí, y quizá es medio extraño de decir, pero siento que esa época fue una especie de paraíso tropical JAJAJ, no tropical, pero así se sentía</p>
+                `,
+                alerta: 'el de esta página ni siquiera parecía un gatito JAJAJ, se suponía que fuera el de minecraft, pero no parece',
+                hijos: [25],
+                flotantes: [
+                    { tipo: 'conejo', top: '55%', left: '12%' },
+                    { tipo: 'navegacion', destino: 25, imagen: 'encuentroceanianoche.png', top: '25%', left: '75%' }
+                ]
+            },
+            
+            22: {
+                id: 22,
+                texto: `<h1>paz</h1>
+                <p>creo que esta parte está medio boba, pero boba bonito, más orientada a tí y a agradecer lo que eres y aportas</p>
+                <p>tú mismo sabes, que eres alguien demasiado noble, muy amable, y al menos conmigo, demasiado, demasiado paciente, y en serio gracias, sobretodo por eso último, que a mí siempre me ha intrigado cómo funciona el pensamiento de las personas pacientes, que, yo sé, que por ejemplo a tí te pueden molestar muchas cosas, y creo que esa es la diferencia entre ser una persona tolerante y ser una persona paciente, porque la persona tolerante pueden incluso gritarle en el oído, y según su nivel de tolerancia se va a molestar o muy poco, o muy nada, y una persona paciente se va a molestar como cualquier persona, pero esa molestia no será suficiente para "sacarlo de sus casillas" al chaval, y yo creo que eres de ese tipo de persona, entonces, no sé si como persona paciente, la pases fatal o cómo sea de pesado para tí, y curiosamente tienes de novia a muuuchas cosas que sé que te estresan o al menos disgustan, entonces, o me amas mucho, o me odias mucho, o lo más probable, ambos :0</p>
+                <p>con eso en mente, ¿sabes que eres mi definición de "paz"?, por dos grandes y preciosas razones: </p>
+                <p>primero, el cómo me siento contigo, cada que estoy platicando contigo, cada que te estoy abrazando, besando, pensando, siento mucha paz, lo mismo que ya mencioné en otras partes de esta carta, es como si solo importaramos nosotros, como si no hubiera nada fuera de tus brazos o de tu boca, o de tu corazón, es una tranquilidad y seguridad muy bonita</p>
+                <p>y otra, el cómo eres, eres la persona más tranquila que conozco, tienes un corazoncito tan bonito, que a veces hasta me da miedo, eres un sol, no solo para mí, para todo el mundo, tienes una manera de ser tan pero tan bonita, tan calmada, y contradictorio decirlo así, porque eres igual de bobo hiperactivo que yo a veces, pero lo eres, eres calmado, estás tranquilo, tienes angustias como cualquier persona, pero tienes una calma, muy, muy bonita, y eso adoro muchísimo de tí, mi niño lindo </p>
+                `,
+                alerta: '¡último conejito de esta rama!, búscale en las demás, o regresa si ya encontraste todos, te amo tanto tanto mi vidaaa',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '40%', left: '20%' }
+                ]
+            },
+            
+            23: {
+                id: 23,
+                texto: `<h1>lo emocional</h1>
+                <p>aquí no es solo agradecerte por el esfuerzo, es más específico, quiero agradecerte y hablar por el esfuerzo emocional que haces, que hacemos, y que toda relación implica, porque, sí, nos amamos, nos adoramos y lo que quieras, pero ni todo el amor del mundo serían suficientes para que no nos afectaran las cosas, sobretodo a tí, yo sé lo pesada y molesta que puedo llegar a ser, soy muy consciente de mis actitudes feas, lo frustrante que puede llegar a ser convivir conmigo, y aún así, tú me amas, e incluso me has llegado a decir que estos defectos como el ser así de intensa, no te parecen ni siquiera defectos, que al contrario, te gustan; eso tampoco quita que sea algo cansado de llegar a la larga, porque sí, puede que te guste que sea tan "sensible" (como tú lo llamas), pero aún así, después de yo ponerme a llorar por quinta vez en el día por una tontería distinta, sí llega a ser hartante, y esto no es solo de mi lado, quizá tú no eres tan sensible, pero también sientes, y aún sin ser situaciones molestas, a veces alguno de los dos no está en la mejor dispocisión ni anímica ni de tiempos para atender al otro en algún momento, pero siendo una relación, implica un sobre esfuerzo, en el que como tú, tantas veces aún cansado, te despertabas en la madrugada para ayudarme a dormir, o yo, aún en tiempos pesados de escuela, me hago el tiempo para hablar contigo, hacer lo posible por dormir tranquilos ambos, por atender inseguridades, y cualquier cosa con tal de que estés y estemos bien, y lo mismo haces tú (y hasta más que yoo). Eso es algo que me parece muy muy bonito de pensar, es tal cual decir "es más amor que sueño", "es más amor que flojera", "es más amor que nervios", y de verdad de verdad, muchas gracias, porque aun que estamos priorizando nuestras vidas y nuestras necesidades por encima del otro, yo sé que si estando tú en la escuela o algo así, me contestarías si te llamo, me atenderías aún sintiéndote mal, y también eso es una parte bonita, saber que el otro está para tí, pero respetar sus espacios y sus tiempos, y eso es algo que creo que me tardé más de la cuenta en entender, así que también, perdón, te adoro mi niño hermoosoo</p>
+                `,
+                alerta: 'muchas gracias por aguantarme a mí y a estas bobadas',
+                flotantes: [
+                    { tipo: 'conejo', top: '70%', left: '70%' }
+                ]
+            },
+            
+            24: {
+                id: 24,
+                texto: `<h1>LAS cosas</h1>
+                <p>y es que hay algo que me parece muy bonito, y yo de por sí genero apego a un montón de cosas bien bobas, cuando esas cosas vienen o tienen que ver contigo, me genera como 5 veces esa emoción, con las cosas que compras, así sean comida o algo que obviamente con el uso dejará de existir, siento raro usarlos, como con los glosses, los uso con gusto y más gusto porque me los diste tú, pero siento feo gastar algo que tú me diste con tu esfuerzo, como la vez que te confesé culposamente haber tirado el caldito de las bolas agridulces de los chinos, guardar tickets, guardar cada pequeña cosita, porque por pequeña que sea la pertenencia, yo las veo como si fueran un pedacito de nuestra relación: para mí no es solo el envoltorio de un chocolate, para mí es el envoltorio de uno de los chocolates que venían en la caja que me regaló mi amado novio cuando terminé la vocacional, o lo mismo con los pétalos de las flores, y ahí se me mezclan varias cosas: 1, te amo y amo lo que me das, así "ya no sirvan", y dos, me encantan las flores y más en un contexto romántico: como las florecitas que me dice en san valentín de 2024, hechas de una ficha de ETS, me parecen algo tan muy muy bonito, todo lo que tengo relacionado a tí, lo tengo guardado como si fuera el mayor tesoro (lo eres, tú, no tus cosas), y me fascina voltear a tal lado, y ver flores DADAS POR TÍ, voltear a tal lado, y ver un peluche DADO POR TÍ, o  tantas cosas así que hay en mi recámara, y por dios, te adoro tanto Lev  </p>/
+                `,
+                alerta: 't amo tanto tanto amor mío, ¡sigue buscando gatitoossss!',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '25%', left: '25%' }
+                ]
+            },
+            
+            25: {
+                id: 25,
+                texto: `<h1>progreso</h1>
+                <p>me pasa algo que yo pensaría "uyno, qué feo", de primera impresión, pero al analizarlo, es bastante bonito: a veces no recuerdo cuándo fue tal cosa, si me dices "¿te acuerdas cuando intentamos ver las de marvel y solo llegamos a Capitan américa?", te diría que no, porque no recuerdo en qué año fué, la mayoría de cosas de esta relación soy totalmente incapaz de asociarlas a una época o siquiera a un año, y es bonito, llevamos 3 años lev, 1096 días en los que hemos hablado diario, obviamente no recordamos la mayoría de cosas, qué bonito, ¿no?</p>
+                <p>1096 días de hablar DIARIO (con una semana menos, pero ajá, detallitos), en los que cada día te conozco un poquito más, cada vez enamorándome más de tí, amándote más, planeando más cosas, viviendo algo nuevo, formando recuerdos, tantos tantos, creamos esto desde cero, es curioso de pensar, cómo todo empezó, y ni siquiera creo que haya empezado con el "omg, escuchas tessa ía?", o con ponerla en tus historias, o tan siquiera con haberte tú enamorado de mí, son muchas cositas que coincidieron para que fueran así las cosas, quizá si sacabas 10 aciertos más en el COMIPEMs, o si yo me quedaba dormida el día que presenté el exámen, o si se hubieran logrado los planes de mi mamá de irnos a Querétaro cuando yo tenía 9 años, o si te hubiera ganado otro espermatozoide, o si mi mamá no me hubiera tenido, o si mi tatara abuela se hubiera peleado con mi tatara abuelo el día que crearon a mi bisabuela, tantas cositas tan insignificantes que nos trajeron a algo tan significativo para el otro, y da miedo pensar que de no haberse acomodado así las cosas, ni siquiera sabríamos que esto era posible, pero qué bueno que todo se acomodó para estar a las 5 de la mañana escribiendo lo mucho que te adoro y lo feliz que me haces y agradecerte de todo, de cada beso, de cada salida, de cada abrazo, de cada "te amo" </p>
+                `,
+                alerta: '¿no sientes infinita esta rama? a mí me encanta, aunque esta rama sí tendrá fin, espero que lo que representa nunca lo tenga, te adoro',
+                hijos: [26],
+                flotantes: [
+                    { tipo: 'conejo', top: '50%', left: '20%' },
+                    { tipo: 'navegacion', destino: 26, imagen: 'dieciocho.png', top: '70%', left: '70%' }
+                ]
+            },
+            
+            26: {
+                id: 26,
+                texto: `<h1>actualidad</h1>
+                <p>ahora sí, llegamos a la época más bonita de la relación (hasta ahora), la actualidad; es el momento en el que más nos hemos amado, es el momento en el que más claras tenemos las cosas y en el que más errores hemos solucionado HASTA AHORA, que eso es algo muy bonito de lo que hablaré en la siguiente página, pero ajá, ahorita estamos tan bien como hemos podido estar en la relación, y aunque fuera un mal momento, creo que seguiría siendo lo mejor hasta ahora</p>
+                <p>me hace tan feliz todo lo que tenemos, me hace tan feliz despertar y escribirte, verte los Viernes que sales temprano, vernos de vez en cuando, seguir hablando diario aún después de más de 3 años, lo cercano que te estás volviendo a mi familia, a estas alturas ya somos una relación seria a ojos de los demás, que está menso de mencionar, porque pues al menos para mí, desde el inicio lo fue, entonces pues no me debería importar lo que interpreten externos, pero esto creo que es también un reflejo de cómo estamos haciendo las cosas y de lo mucho que hemos avanzado hasta la fecha, y qué bonito cuando se nota en otras cosas, porque una cosa es lo que sentimos, y otra cosa es lo que es, y en serio en serio, qué bonito lo que es nuestra relación, qué bonito sentir tanto amor por tí, y sentirme tan amada, qué bonito tener tantos planes a futuro, qué bonito sentirme segura contigo, qué precioso eres tú, y qué hermosa relación hemos formado en estos ya 3 años, eres mi sol, te adoro</p>
+                `,
+                alerta: 'esta es la rama más larga, y a mi parecer, la más bonita, espero que te guste',
+                hijos: [27],
+                flotantes: [
+                    { tipo: 'conejo', top: '60%', left: '70%' },
+                    { tipo: 'navegacion', destino: 27, imagen: 'paisajevoca.png', top: '10%', left: '15%' }
+                ]
+            },
+            
+            27: {
+                id: 27,
+                texto: `<h1>hasta morir</h1>
+                <p>como ya mencioné, amo tener tantos planes a futuro contigo, incluso a corto plazo, como vernos mañana, entrar a trabajar a cinépolis, o los de largo plazo, como los obvios, que son casarnos, tener nuestra casita, o planear detallitos, planear mejoras que ahorita por X o Y razón no se pueden, y es otra de las cosas que aparte de lo bonito que representan por sí solas, son tan bonitas por todo lo que implican: ¿qué implica tener planes a futuro?, que los dos queremos un futuro juntos, que los dos lo sabemos posible porque ya llegamos a este punto juntos, que los dos sabemos todas las mejoras y cosas que ha habido en la relación en estos 3 años, y que al ser cosa de dos, y los dos estar de acuerdo, es muy muy probable que se logre, no solo tenemos amor, tenemos intención, y muchas muchas metas, y sea en las condiciones que sea, para mí lo principal y lo único que puedo querer, es pasar el resto de mis días a tu lado, cada día despertar contigo, sea por mensaje, o acurrucados, cada día tenerte en mi vida, cada día amarte, cada día pensarte, y que aún cuando hayamos alcanzado nuestros planes iniciales, sigamos teniendo más planes a futuro, seguir esforzándonos, seguir mejorando, y pasar nuestras vidas enteras juntos, de aquí al altar, y del altar a la tumba, amor mío</p>
+                `,
+                alerta: 'hasta morir, ¿verdad mi amor?',
+                hijos: [],
+                flotantes: [
+                    { tipo: 'conejo', top: '45%', left: '55%' }
+                ]
+            },
+            
+            28: {
+                id: 28,
+                texto: `<h1>🙀 easter egg 🙀</h1>
+                <p>¡hola mi niño precioso!</p>
+                <p>yo sabía que mi niño lindo, bonito, inteligente, precioso, hermoso, chulo, perfecto, sabio, majestuoso, tierno, y más increíble del mundo mundial iba a poder encontrar los nada escondidos 27 gatitos, que sí, originalmente iban a estar escondidos detrás de imágenes y textos, pero no le ví mucho sentido, preferí darle foco a los textos, igual creo que está bonito como lo dejé, espero que te haya gustado esto y los regalos físicos</p>
+                <p>aquí está tu premio, está medio bobo JAJAJ, playlist, una última cartita, y un increíble vídeo que hice con todo mi amor, perdón si quedó cuchito</p>
+
+        <div class="video-container">
+            <video id="miVideo" controls>
+                <source src="./videoo.mp4" type="video/mp4">
+                Tu navegador no soporta el video.
+            </video>
+        </div>
+                <p>cada parte de mi ser ADORA cada parte de tu ser, eres lo mejor que me ha pasado, el amor de mi vida, mi felicidad, todito tú, completito, eres un sueño, la relación también ha sido un sueño, de verdad muchísimas gracias por estos 3 años de relación, que ójala no sean ni una décima parte de lo que será, ójala durar hasta morir, durar decadas juntos que en algún momento ya no sea "felices 3 años!", que sea un "felices 3 decadas!", o un "feliz 3/4 de nuestras vidas juntos a los 60, así ha sido, sumando un día, hasta que la vida sea "nosotros", más tiempo juntos que sin conocernos, una vida entera junto a tí, mi gran amor, me da miedo ser tan feliz que realmente sufra la muerte, me da miedo no querer irme, ójala esto dure más allá de morir, ójala poder seguirte amando cuando ya ni siquiera sea consciencia, ójala seguir enamorada de tí por el resto de la eternidad, "volvamonos eternos", como en viento, si pudiera elegir una emoción en la que existir toda la eternidad, después de morir, elegiría el amor que te tengo, este amor que de por sí desde el primer año ya era inmenso, ahora muchísimo más, imagínate en 1, 2 o 7 décadas!</p>
+                <p>eres el amor hecho persona, y no solo por lo lindo y noble que eres, eres el amor porque así te siento, así eres para mí, puritito amor, solo puedo sentir amor cuando estoy contigo, no importa (tanto) ninguna otra cosa, solamente tú y yo, y es bonito, amarte, saber que me amas, saber que en estos 3 años nos hemos podido conocer más que a nadie, me conoces mejor que yo misma, sabes más de mí que cualquier otra persona en el mundo, son 3 años de noviazgo, 3 años de confianza, pláticas diarias, cada día conociendo otro poquito de tí, de tu manera de pensar que tanto me gusta, de tu vida, de tu sentir, cada pequeño detalle, todo lo que mencioné en esta página, para mí la relación es todo eso, es recuerdos, es reconocimiento, presencia, planes, admiración, amor, lo es todo, sobretodo es preciosa, esta relación es preciosa, el amor que nos tenemos es hermoso e inmenso, y aún con todo lo que ya es, cada día crece un poquito cada aspecto: cada día me enamoro más de lo que ya conozco de tí, así como cada día conozco algo nuevo de tí, de lo que me enamoro. cada día te amo más, cada día te pienso, cada día pienso en un futuro a tu lado, cada día algo me recuerda a tí, cada día estás presente en mi vida, a diario somos novios, a diario somos esto, no es como que solo seamos novios cuando nos vemos o cuando hablamos, y suena bien tonto decirlo así, pero es algo que al pensarlo me genera muchas emociones, eres mi amorcito lindo, eres mi novio, somos novios, somos pareja y esto crece aún en los ratos que no estamos juntos, crece porque aún sin ser una sola persona o entidad o qué sé yo, somos novios, crece porque a estas alturas ya estamos súper presentes en la vida del otro, crece porque así funcionan las cosas, es raro de pensar, pero muy bonito  </p>
+                <p>no te puedo agradecer lo suficiente, seguramente aún en tantas páginas tan rebuscadas olvidé mencionar algo que agradecerte, y solo habré olvidado mencionarlo, porque estoy totalmente segura de que yo no olvidaría agradecerte algo. entonces, de verdad gracias amor, igual no sea algo "normal" agradecerte por la relación, porque si estamos aquí es cosa de dos, no es solo tú diciéndome "Sí, Sofía, somos novios, hay que besarnos", pero igual, gracias, por amarme, por querer estar en la relación, por no solo quedarte en querer la relación, muchas gracias por ser como eres, muchas gracias por absolutamente todo, incluso gracias por haberle sacado punta a un lapiz mío en alguna ocasión, aún siendo cualquier bobada, creo que es lo mismo de alimentar la relación, todo lo que hacemos es parte de esto, y eso es otra de las cosas que al pensarlas me hace sentir cosas, incluso eso, es algo que yo siento muy "propio de la relación", es algo que me pasa seguido al pensar en nosotros, el pensarnos me hace llorar de la emoción, sin ser algo feo siquiera, eso es parte, aún sin ser algo que las dos partes vivan, está aquí, lo ocasionas indirectamente, también gracias por eso  </p>
+                <p>así que, eso, muchas gracias también por haberte echado estas 27 mini cartitas virtuales, por leer todo esto, por amarme, ójala dentro de un año poder agradecerte de nuevo, quiero estar contigo por siempre, cariño, toda la vida ser tuya y tú ser mío, toda la vida pensar en tí y solo en tí, toda la vida estar juntitos, toda la vida, para siempre, hasta morir, del altar a la tumba, y de ser posible, más allá, quiero una eternidad completita a tu lado, quiero amarte todo el tiempo que sea posible, quiero sentirte para siempre</p>
+                <p>te quiero, te amo y te adoro, con el alma entera, mi sol </p>
+                    { tipo: 'enlace', url: 'https://open.spotify.com/playlist/41KGwp99A69J8syjpYtmkA', imagen: 'anai.png', top: '20%', left: '80%' },
+
+                `,                    
+                hijos: [],
+                flotantes: []
+            }
+        };
+
+        const state = {
+            currentPage: 1,
+            foundBunnies: new Set(),
+            audioEnabled: false,
+            currentAudio: null,
+            history: [1]
+        };
+
+        try {
+            const saved = localStorage.getItem('laberinto-estado');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state.foundBunnies = new Set(parsed.foundBunnies || []);
+            }
+        } catch (e) {}
+
+
+        function renderPage(pageId) {
+            const page = pages[pageId] || pages[1];
+            state.currentPage = pageId;
+            
+            if (state.history[state.history.length - 1] !== pageId) {
+                state.history.push(pageId);
+            }
+            
+            const app = document.getElementById('app');
+            
+            app.style.backgroundImage = `url('${config.paths.fondos}${config.files.fondoPrefijo}${pageId}${config.files.extensionFondo}')`;
+            
+            app.innerHTML = `
+                <div class="counter">
+                    🐱 ${state.foundBunnies.size}/27
+                </div>
+                
+                <div class="text-box">
+                    <div class="page-text">
+                        ${page.texto}
+                    </div>
+                </div>
+            `;
+            
+            if (state.history.length > 1) {
+                const backBtn = document.createElement('img');
+                backBtn.src = `${config.paths.botones}${config.files.botonRegresar}`;
+                backBtn.className = 'nav-button';
+                backBtn.alt = 'Regresar';
+                backBtn.onclick = goBack;
+                app.appendChild(backBtn);
+            }
+            
+            if (pageId === 1 && state.foundBunnies.size >= 27) {
+                const secretBtn = document.createElement('img');
+                secretBtn.src = `${config.paths.botones}${config.files.botonSecreto}`;
+                secretBtn.className = 'secret-button visible';
+                secretBtn.alt = 'Página secreta';
+                secretBtn.onclick = () => navigateTo(28);
+                app.appendChild(secretBtn);
+            }
+        page.flotantes.forEach((item, index) => {
+         const img = document.createElement('img');
+
+        if (item.tipo === 'conejo') {
+        const bunnyId = `bunny-${pageId}`;
+        
+        if (state.foundBunnies.has(bunnyId)) {
+            return;
+        }
+        
+        img.src = `${config.paths.conejitos}${config.files.conejoPrefijo}${pageId}${config.files.extensionConejo}`;
+        img.className = 'floating-image';
+        img.dataset.tipo = 'conejo';
+        img.dataset.bunnyId = bunnyId;
+        img.dataset.pageId = pageId;
+        img.dataset.alerta = page.alerta;
+        
+        img.onclick = (e) => {
+            e.stopPropagation();
+            handleBunnyClick(img, pageId, bunnyId, page.alerta);
+        };
+    } 
+    else if (item.tipo === 'enlace') {
+        img.src = `${config.paths.flotantes}${item.imagen}`;
+        img.className = 'floating-image enlace';
+        img.dataset.tipo = 'enlace';
+        img.style.cursor = 'pointer';
+        
+        img.onclick = (e) => {
+            e.stopPropagation();
+            window.open(item.url, '_blank');
+        };
+    }
+    else if (item.tipo === 'decoracion') {
+        img.src = `${config.paths.flotantes}${item.imagen}`;
+        img.className = 'floating-image decoracion';
+        img.style.pointerEvents = 'none';
+        img.alt = 'decoracion';
+    }
+    else {
+        img.src = `${config.paths.flotantes}${item.imagen}`;
+        img.className = 'floating-image navegacion';
+        img.dataset.tipo = 'navegacion';
+        img.alt = 'Navegar';
+        
+        img.onclick = (e) => {
+            e.stopPropagation();
+            navigateTo(item.destino);
+        };
+    }
+    
+    img.style.top = item.top;
+    img.style.left = item.left;
+    app.appendChild(img);
+});
+            
+            playMusic(pageId);
+            saveState();
+        }
+
+        function handleBunnyClick(element, pageId, bunnyId, alertMessage) {
+            if (state.foundBunnies.has(bunnyId)) {
+                return;
+            }
+            
+            element.classList.add('conejo-clickeado');
+            state.foundBunnies.add(bunnyId);
+            
+            setTimeout(() => {
+                alert(alertMessage || `¡Encontraste un conejito en la página ${pageId}!`);
+            }, 100);
+            
+            updateCounter();
+            
+            const total = state.foundBunnies.size;
+            
+            if (total >= 27) {
+                lanzarConfetti();
+                
+                if (total === 27) {
+                    setTimeout(() => {
+                        alert('🎉 ¡FELICIDADES! Has encontrado los 27 conejitos. Regresa a la página 1 para la sorpresa final.');
+                    }, 500);
+                }
+                
+                if (state.currentPage === 1) {
+                    let secretBtn = document.querySelector('.secret-button');
+                    
+                    if (!secretBtn) {
+                        secretBtn = document.createElement('img');
+                        secretBtn.src = `${config.paths.botones}${config.files.botonSecreto}`;
+                        secretBtn.className = 'secret-button visible';
+                        secretBtn.alt = 'Página secreta';
+                        secretBtn.onclick = () => navigateTo(28);
+                        document.getElementById('app').appendChild(secretBtn);
+                    } else {
+                        secretBtn.classList.add('visible');
+                    }
+                }
+            }
+            
+            saveState();
+        }
+
+
+        function navigateTo(pageId) {
+            if (pageId === 28) {
+                lanzarConfetti();
+                lanzarConfetti(); 
+            }
+            if (pages[pageId]) {
+                renderPage(pageId);
+            }
+        }
+
+        function goBack() {
+            if (state.history.length > 1) {
+                state.history.pop();
+                renderPage(state.history[state.history.length - 1]);
+            } else {
+                renderPage(1);
+            }
+        }
+
+        function updateCounter() {
+            const counter = document.querySelector('.counter');
+            if (counter) {
+                counter.innerHTML = `🐱 ${state.foundBunnies.size}/27`;
+            }
+        }
+
+
+        function playMusic(pageId) {
+            if (state.currentAudio) {
+                state.currentAudio.pause();
+            }
+            
+            const audio = new Audio();
+            audio.src = `${config.paths.musica}${config.files.cancionPrefijo}${pageId}${config.files.extensionCancion}`;
+            audio.loop = true;
+            
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    state.pendingAudio = audio;
+                });
+            }
+            
+            state.currentAudio = audio;
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem('laberinto-estado', JSON.stringify({
+                    foundBunnies: Array.from(state.foundBunnies)
+                }));
+            } catch (e) {}
+        }
+
+        function init() {
+            renderPage(1);
+            
+            document.addEventListener('click', function enableAudio() {
+                if (state.pendingAudio) {
+                    state.pendingAudio.play();
+                    state.pendingAudio = null;
+                }
+            }, { once: true });
+            
+            window.addEventListener('popstate', (e) => {
+                e.preventDefault();
+                goBack();
+            });
+            
+            history.pushState({ page: 1 }, '', '#1');
+        }
+        
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('miVideo');
+    
+    if (video) {
+        video.addEventListener('play', function() {
+            if (state.currentAudio) {
+                state.currentAudio.pause();
+            }
+        });
+        
+        video.addEventListener('pause', function() {
+            if (state.currentAudio && state.currentPage === 28) {
+                state.currentAudio.play().catch(e => console.log('Esperando interacción'));
+            }
+        });
+        
+        video.addEventListener('ended', function() {
+            if (state.currentAudio && state.currentPage === 28) {
+                state.currentAudio.play().catch(e => console.log('Esperando interacción'));
+            }
+        });
+    }
+});
+
+
+        document.addEventListener('DOMContentLoaded', init);
+
+
+    </script>
+</body>
+</html>
